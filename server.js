@@ -19,6 +19,10 @@ async function buscarNoticias() {
     try {
         const feeds = [
             'https://g1.globo.com/rss/g1/',
+            'https://www.theverge.com/rss/index.xml',
+            'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
+            'https://feeds.bbci.co.uk/news/rss.xml',
+            'https://www.theguardian.com/international/rss',
             'https://www.theverge.com/rss/index.xml'
         ];
 
@@ -31,7 +35,7 @@ async function buscarNoticias() {
         }
 
         // Preparar o prompt para a Gemini API
-        const prompt = `Faça um resumo dessas notícias da forma mais objetiva possível. Forneça o resumo sempre em Português do Brasil. Aqui estão as notícias: ${noticias.join(' | ')}`;
+        const prompt = `Summarize these news in the most objective way possible, indicating the website for each news item. Always provide the summary in Brazilian Portuguese. Here are the news: ${noticias.join(' | ')}`;
 
         // Chamada para a Gemini API para gerar o conteúdo
         const result = await model.generateContent(prompt);
