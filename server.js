@@ -1,15 +1,18 @@
 import express from 'express';
-import OpenAI from 'openai';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import Parser from 'rss-parser';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 dotenv.config();
 
 const app = express();
 const PORT = 4000;
-const openai = new OpenAI(process.env.OPENAI_API_KEY);
 const parser = new Parser();
+
+// Inicializa o cliente Gemini com sua chave de API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' }); // Usando o modelo gemini-2.0-flash
 
 // Função para buscar notícias
 async function buscarNoticias() {
@@ -27,22 +30,14 @@ async function buscarNoticias() {
             noticias.push(...data.items.slice(0, 3).map(item => `📌 ${item.title}`));
         }
 
-        const response = await openai.chat.completions.create({
-            model: 'gpt-3.5-turbo',
-            messages: [
-                {
-                    role: 'system',
-                    content: 'You are an assistant that must summarize the main news from the websites provided to you as objectively as possible. Always return the news summary in Brazilian Portuguese.'
-                },
-                {
-                    role: 'user',
-                    content: `Aqui estão as notícias: ${noticias.join(' | ')}`
-                }
-            ],
-            max_tokens: 500
-        });
+        // Preparar o prompt para a Gemini API
+        const prompt = `Faça um resumo dessas notícias da forma mais objetiva possível. Forneça o resumo sempre em Português do Brasil. Aqui estão as notícias: ${noticias.join(' | ')}`;
 
-        return response.choices[0].message.content;
+        // Chamada para a Gemini API para gerar o conteúdo
+        const result = await model.generateContent(prompt);
+
+        // Retorna o conteúdo gerado pela Gemini API
+        return result.response.text();
     } catch (error) {
         console.error("Erro ao buscar notícias:", error);
         return "Não foi possível obter notícias hoje.";
