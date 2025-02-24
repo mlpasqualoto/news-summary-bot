@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "news-summary-bot",
   "version": "1.0.0",
   "main": "index.js",
@@ -14,6 +15,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "node-cron": "^3.0.3",
-    "openai": "^4.85.4"
+    "openai": "^4.85.4",
+    "rss-parser": "^3.13.0"
   }
 }
