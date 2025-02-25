@@ -1,4 +1,5 @@
 import express from 'express';
+import axios from 'axios';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import Parser from 'rss-parser';
@@ -9,6 +10,10 @@ dotenv.config();
 const app = express();
 const PORT = 4000;
 const parser = new Parser();
+
+const metaApiKey = process.env.META_API_KEY;
+const phoneNumberId = process.env.PHONE_NUMBER_ID;
+const phoneNumber = process.env.PHONE_NUMBER;
 
 // Inicializa o cliente Gemini com sua chave de API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -48,6 +53,31 @@ async function buscarNoticias() {
     }
 };
 
+async function enviarNoticias(message) {
+    try {
+        const response = await axios.post(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
+        {
+            messaging_product: "whatsapp",
+            to: `${phoneNumber}`,
+            type: "text",
+            text: {
+                body: `${message}`
+            }
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${metaApiKey}`
+            }
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("Erro ao enviar notícias:", error);
+        return "Erro ao enviar notícias.";
+    }
+}
+
 app.get("/", (req, res) => {
 
     res.send("Welcome to the News Summarizer API!");
@@ -66,10 +96,17 @@ app.get("/noticias", async (req, res) => {
 });
 
 // Agenda a busca de notícias diariamente às 8h
-cron.schedule('0 8 * * *', async () => {    
+cron.schedule('1 1 * * *', async () => {    
     const noticias = await buscarNoticias();
-    console.log("Resumo das notícias do dia:", noticias);
+    const message = await enviarNoticias(noticias);
+    console.log("Resumo das notícias do dia:", noticias, "message:", message);
 });
+
+(async () => {
+    const noticias = await buscarNoticias();
+    const message = await enviarNoticias(noticias);
+    console.log("Resumo das notícias do dia:", noticias, "message:", message);
+})();
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
