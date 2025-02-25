@@ -8,7 +8,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 dotenv.config();
 
 const app = express();
-const PORT = 4000;
+const PORT = 3000;
 const parser = new Parser();
 
 const metaApiKey = process.env.META_API_KEY;
@@ -62,13 +62,13 @@ async function enviarNoticias(message) {
                 to: phoneNumber,
                 type: "template",
                 template: {
-                    name: "newsbot", // Nome do template conforme cadastrado
+                    name: "newsbot",
                     language: { code: "pt_BR" },
                     components: [
                         {
                             type: "body",
                             parameters: [
-                                { type: "text", text: message } // Aqui você envia o resumo que vai substituir {{news}}
+                                { type: "text", text: message }
                             ]
                         }
                     ]
@@ -107,7 +107,7 @@ app.get("/noticias", async (req, res) => {
 });
 
 // Agenda a busca de notícias diariamente às 8h
-cron.schedule('1 1 * * *', async () => {    
+cron.schedule('0 8 * * *', async () => {    
     const noticias = await buscarNoticias();
     const message = await enviarNoticias(noticias);
     console.log("Resumo das notícias do dia:", noticias, "message:", message);
