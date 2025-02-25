@@ -55,21 +55,32 @@ async function buscarNoticias() {
 
 async function enviarNoticias(message) {
     try {
-        const response = await axios.post(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
-        {
-            messaging_product: "whatsapp",
-            to: `${phoneNumber}`,
-            type: "text",
-            text: {
-                body: `${message}`
+        const response = await axios.post(
+            `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
+            {
+                messaging_product: "whatsapp",
+                to: phoneNumber,
+                type: "template",
+                template: {
+                    name: "newsbot", // Nome do template conforme cadastrado
+                    language: { code: "pt_BR" },
+                    components: [
+                        {
+                            type: "body",
+                            parameters: [
+                                { type: "text", text: message } // Aqui você envia o resumo que vai substituir {{news}}
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${metaApiKey}`
+                }
             }
-        },
-        {
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${metaApiKey}`
-            }
-        });
+        );
 
         return response.data;
     } catch (error) {
