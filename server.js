@@ -1,9 +1,9 @@
 import express from 'express';
-import axios from 'axios';
 import cron from 'node-cron';
 import dotenv from 'dotenv';
 import Parser from 'rss-parser';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import TelegramBot from 'node-telegram-bot-api';
 
 dotenv.config();
 
@@ -11,9 +11,10 @@ const app = express();
 const PORT = 3000;
 const parser = new Parser();
 
-const metaApiKey = process.env.META_API_KEY;
-const phoneNumberId = process.env.PHONE_NUMBER_ID;
-const phoneNumber = process.env.PHONE_NUMBER;
+// Configuração do bot do Telegram
+const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+const chatId = process.env.TELEGRAM_CHAT_ID;
+const bot = new TelegramBot(telegramToken, { polling: false });
 
 // Inicializa o cliente Gemini com sua chave de API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -26,8 +27,6 @@ async function buscarNoticias() {
             'https://g1.globo.com/rss/g1/',
             'https://feeds.folha.uol.com.br/emcimadahora/rss091.xml',
             'https://www.theverge.com/rss/index.xml',
-            'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
-            'https://feeds.bbci.co.uk/news/rss.xml',
             'https://www.theguardian.com/international/rss'
         ];
 
@@ -46,7 +45,7 @@ async function buscarNoticias() {
         }
 
         // Preparar o prompt para a Gemini API
-        const prompt = `Summarize the provided news objectively, always indicating at the beginning of each item which news website it belongs to and including its respective link at the end of each item. Always provide the summary in Brazilian Portuguese. Here are the news: ${noticias.join(' | ')}`;
+        const prompt = `Summarize the following news in Brazilian Portuguese, ensuring the total length does not exceed 4096 characters. Each item must start with the news website's name and end with its link. If the summary exceeds the limit, shorten the content while preserving key information. News: ${noticias.join(' | ')}`;
 
         // Chamada para a Gemini API para gerar o conteúdo
         const result = await model.generateContent(prompt);
@@ -61,39 +60,13 @@ async function buscarNoticias() {
 
 async function enviarNoticias(message) {
     try {
-        const response = await axios.post(
-            `https://graph.facebook.com/v22.0/${phoneNumberId}/messages`,
-            {
-                messaging_product: "whatsapp",
-                to: phoneNumber,
-                type: "template",
-                template: {
-                    name: "newsbot",
-                    language: { code: "pt_BR" },
-                    components: [
-                        {
-                            type: "body",
-                            parameters: [
-                                { type: "text", text: message }
-                            ]
-                        }
-                    ]
-                }
-            },
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${metaApiKey}`
-                }
-            }
-        );
-
-        return response.data;
+        const response = await bot.sendMessage(chatId, message);
+        return response;
     } catch (error) {
-        console.error("Erro ao enviar notícias:", error);
-        return "Erro ao enviar notícias.";
+        console.error("Erro ao enviar notícias pelo Telegram:", error);
+        return "Erro ao enviar notícias pelo Telegram.";
     }
-}
+};
 
 app.get("/", (req, res) => {
     res.send("Welcome to the News Summarizer API!");
@@ -112,17 +85,22 @@ app.get("/noticias", async (req, res) => {
 });
 
 // Agenda a busca de notícias diariamente às 8h
-cron.schedule('0 8 * * *', async () => {    
+cron.schedule('0 20 * * *', async () => {
+    console.log("Enviando notícias às 20h no horário de São Paulo...");
     const noticias = await buscarNoticias();
     const message = await enviarNoticias(noticias);
     console.log("Resumo das notícias do dia:", noticias, "message:", message);
+}, {
+    scheduled: true,
+    timezone: "America/Sao_Paulo"
 });
 
 /*(async () => {
     const noticias = await buscarNoticias();
     const message = await enviarNoticias(noticias);
     console.log("Resumo das notícias do dia:", noticias, "message:", message);
-})(); */
+    console.log("Tamanho da resposta", noticias.length);
+})();*/
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
