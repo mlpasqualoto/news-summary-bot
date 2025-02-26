@@ -24,11 +24,11 @@ async function buscarNoticias() {
     try {
         const feeds = [
             'https://g1.globo.com/rss/g1/',
+            'https://feeds.folha.uol.com.br/emcimadahora/rss091.xml',
             'https://www.theverge.com/rss/index.xml',
             'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
             'https://feeds.bbci.co.uk/news/rss.xml',
-            'https://www.theguardian.com/international/rss',
-            'https://www.theverge.com/rss/index.xml'
+            'https://www.theguardian.com/international/rss'
         ];
 
         let noticias = [];
@@ -36,11 +36,17 @@ async function buscarNoticias() {
         for (let feed of feeds) {
             const data = await parser.parseURL(feed);
             console.log("Feed:", data.title);
-            noticias.push(...data.items.slice(0, 3).map(item => `📌 ${item.title}`));
+            noticias.push(...data.items.slice(0, 3).map(item => {
+                return `📌 ${data.title}:
+                    Título: ${item.title}
+                    Data: ${item.pubDate || 'Data não disponível'}
+                    Link: ${item.link || 'Link não disponível'}
+                    Resumo: ${item.contentSnippet || item.content || 'Resumo não disponível'}`;
+            }));
         }
 
         // Preparar o prompt para a Gemini API
-        const prompt = `Summarize these news in the most objective way possible, indicating the website for each news item. Always provide the summary in Brazilian Portuguese. Here are the news: ${noticias.join(' | ')}`;
+        const prompt = `Summarize the provided news objectively, always indicating at the beginning of each item which news website it belongs to and including its respective link at the end of each item. Always provide the summary in Brazilian Portuguese. Here are the news: ${noticias.join(' | ')}`;
 
         // Chamada para a Gemini API para gerar o conteúdo
         const result = await model.generateContent(prompt);
@@ -90,7 +96,6 @@ async function enviarNoticias(message) {
 }
 
 app.get("/", (req, res) => {
-
     res.send("Welcome to the News Summarizer API!");
 });
 
@@ -113,11 +118,11 @@ cron.schedule('0 8 * * *', async () => {
     console.log("Resumo das notícias do dia:", noticias, "message:", message);
 });
 
-(async () => {
+/*(async () => {
     const noticias = await buscarNoticias();
     const message = await enviarNoticias(noticias);
     console.log("Resumo das notícias do dia:", noticias, "message:", message);
-})();
+})(); */
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
