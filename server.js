@@ -84,8 +84,8 @@ app.get("/noticias", async (req, res) => {
     }
 });
 
-// Agenda a busca de notícias diariamente às 8h
-cron.schedule('0 20 * * *', async () => {
+// Agenda a busca de notícias diariamente às 7h
+cron.schedule('0 7 * * *', async () => {
     console.log("Enviando notícias às 20h no horário de São Paulo...");
     const noticias = await buscarNoticias();
     const message = await enviarNoticias(noticias);
@@ -94,13 +94,6 @@ cron.schedule('0 20 * * *', async () => {
     scheduled: true,
     timezone: "America/Sao_Paulo"
 });
-
-/*(async () => {
-    const noticias = await buscarNoticias();
-    const message = await enviarNoticias(noticias);
-    console.log("Resumo das notícias do dia:", noticias, "message:", message);
-    console.log("Tamanho da resposta", noticias.length);
-})();*/
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
