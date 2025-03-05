@@ -14,7 +14,25 @@ const parser = new Parser();
 // Configuração do bot do Telegram
 const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
-const bot = new TelegramBot(telegramToken, { polling: false });
+const bot = new TelegramBot(telegramToken, { polling: true });
+
+bot.onText(/\/noticias/, async (msg) => {
+    const chatId = msg.chat.id;
+    const noticias = await buscarNoticias(); // Chama a função que já busca as notícias
+    
+    // Verifica se o texto das notícias excede o limite de 4096 caracteres
+    while (noticias.length >= 4096) {
+        console.log("Caracteres das notícias:", noticias.length);
+        noticias = await buscarNoticias();
+    }
+    
+    bot.sendMessage(chatId, noticias);
+});
+
+bot.on('message', (msg) => {
+    console.log("Recebi uma mensagem:", msg.text);
+    bot.sendMessage(msg.chat.id, "Recebi sua mensagem!");
+});
 
 // Inicializa o cliente Gemini com sua chave de API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -58,6 +76,7 @@ async function buscarNoticias() {
     }
 };
 
+// Função para enviar notícias pelo Telegram
 async function enviarNoticias(message) {
     try {
         const response = await bot.sendMessage(chatId, message);
@@ -68,6 +87,7 @@ async function enviarNoticias(message) {
     }
 };
 
+// Endpoint raiz
 app.get("/", (req, res) => {
     res.send("Welcome to the News Summarizer API!");
 });
@@ -85,15 +105,38 @@ app.get("/noticias", async (req, res) => {
 });
 
 // Agenda a busca de notícias diariamente às 7h
-cron.schedule('0 7 * * *', async () => {
-    console.log("Enviando notícias às 20h no horário de São Paulo...");
-    const noticias = await buscarNoticias();
+cron.schedule('0 16 * * *', async () => {
+    console.log("Enviando notícias às 07h no horário de São Paulo...");
+    let noticias = await buscarNoticias();
+    console.log("Caracteres das notícias:", noticias.length);
+
+    // Verifica se o texto das notícias excede o limite de 4096 caracteres
+    while (noticias.length >= 4096) {
+        console.log("Caracteres das notícias:", noticias.length);
+        noticias = await buscarNoticias();
+    }
+
     const message = await enviarNoticias(noticias);
     console.log("Resumo das notícias do dia:", noticias, "message:", message);
 }, {
     scheduled: true,
     timezone: "America/Sao_Paulo"
 });
+
+/*(async () => {
+    console.log("Enviando notícias às 07h no horário de São Paulo...");
+    let noticias = await buscarNoticias();
+    console.log("Caracteres das notícias:", noticias.length);
+
+    // Verifica se o texto das notícias excede o limite de 4096 caracteres
+    while (noticias.length >= 4096) {
+        console.log("Caracteres das notícias:", noticias.length);
+        noticias = await buscarNoticias();
+    }
+
+    const message = await enviarNoticias(noticias);
+    console.log("Resumo das notícias do dia:", noticias, "message:", message);
+})();*/
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
