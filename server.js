@@ -105,7 +105,7 @@ app.get("/noticias", async (req, res) => {
 });
 
 // Agenda a busca de notícias diariamente às 7h
-cron.schedule('0 16 * * *', async () => {
+cron.schedule('0 7 * * *', async () => {
     console.log("Enviando notícias às 07h no horário de São Paulo...");
     let noticias = await buscarNoticias();
     console.log("Caracteres das notícias:", noticias.length);
@@ -122,21 +122,6 @@ cron.schedule('0 16 * * *', async () => {
     scheduled: true,
     timezone: "America/Sao_Paulo"
 });
-
-/*(async () => {
-    console.log("Enviando notícias às 07h no horário de São Paulo...");
-    let noticias = await buscarNoticias();
-    console.log("Caracteres das notícias:", noticias.length);
-
-    // Verifica se o texto das notícias excede o limite de 4096 caracteres
-    while (noticias.length >= 4096) {
-        console.log("Caracteres das notícias:", noticias.length);
-        noticias = await buscarNoticias();
-    }
-
-    const message = await enviarNoticias(noticias);
-    console.log("Resumo das notícias do dia:", noticias, "message:", message);
-})();*/
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
