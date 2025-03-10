@@ -18,7 +18,7 @@ const bot = new TelegramBot(telegramToken, { polling: true });
 
 bot.onText(/\/noticias/, async (msg) => {
     const chatId = msg.chat.id;
-    const noticias = await buscarNoticias(); // Chama a função que já busca as notícias
+    let noticias = await buscarNoticias(); // Chama a função que já busca as notícias
     
     // Verifica se o texto das notícias excede o limite de 4096 caracteres
     while (noticias.length >= 4096) {
